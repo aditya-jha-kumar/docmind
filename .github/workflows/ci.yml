@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint, Type Check & Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      # Placeholder values for CI — never use real secrets in workflow files.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/docmind_ci?schema=public
+      OPENAI_API_KEY: sk-ci-placeholder-not-a-real-key
+      PINECONE_API_KEY: ci-pinecone-placeholder
+      PINECONE_INDEX: docmind-ci
+      CLERK_SECRET_KEY: sk_test_ci_clerk_secret_placeholder
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_ci_clerk_publishable_placeholder
+      UPLOADTHING_SECRET: sk_live_ci_uploadthing_secret_placeholder
+      UPLOADTHING_APP_ID: ci_uploadthing_app_id
+      INNGEST_EVENT_KEY: ci_inngest_event_key_placeholder
+      INNGEST_SIGNING_KEY: ci_inngest_signing_key_placeholder
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate Prisma schema
+        run: npm run prisma:validate
+
+      - name: Generate Prisma client
+        run: npm run prisma:generate
+
+      - name: TypeScript type check
+        run: npm run type-check
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Next.js build
+        run: npm run build
