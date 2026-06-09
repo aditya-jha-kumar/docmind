@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -10,4 +5,97 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+// ─── USER ───────────────────────────────────────────────
+
+model User {
+  id        String   @id // Clerk user ID — not auto-generated
+  email     String   @unique
+  plan      Plan     @default(FREE)
+  createdAt DateTime @default(now())
+
+  documents Document[]
+  chats     Chat[]
+
+  @@map("users")
+}
+
+enum Plan {
+  FREE
+  PRO
+}
+
+// ─── DOCUMENT ───────────────────────────────────────────
+
+model Document {
+  id        String         @id @default(cuid())
+  userId    String
+  filename  String
+  fileUrl   String // UploadThing URL
+  fileSize  Int // bytes
+  status    DocumentStatus @default(PROCESSING)
+  pageCount Int? // filled after processing
+  createdAt DateTime       @default(now())
+
+  user   User            @relation(fields: [userId], references: [id])
+  chunks DocumentChunk[]
+  chats  Chat[]
+
+  @@map("documents")
+}
+
+enum DocumentStatus {
+  PROCESSING // uploaded, pipeline running
+  READY      // embedded, chat unlocked
+  FAILED     // pipeline error
+}
+
+// ─── DOCUMENT CHUNK ─────────────────────────────────────
+
+model DocumentChunk {
+  id            String @id @default(cuid())
+  documentId    String
+  content       String // original text
+  chunkIndex    Int // position in document
+  tokenEstimate Int
+  pineconeId    String // ID used in Pinecone for this vector
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@map("document_chunks")
+}
+
+// ─── CHAT ───────────────────────────────────────────────
+
+model Chat {
+  id         String   @id @default(cuid())
+  userId     String
+  documentId String
+  createdAt  DateTime @default(now())
+
+  user     User      @relation(fields: [userId], references: [id])
+  document Document  @relation(fields: [documentId], references: [id])
+  messages Message[]
+
+  @@map("chats")
+}
+
+// ─── MESSAGE ────────────────────────────────────────────
+
+model Message {
+  id        String      @id @default(cuid())
+  chatId    String
+  role      MessageRole
+  content   String
+  createdAt DateTime    @default(now())
+
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
 }
