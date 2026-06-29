@@ -1,42 +1,31 @@
 import DocumentUpload from "@/app/components/document-upload";
-import { getOrCreateUser } from "@/lib/user";
-import { prisma } from "@/lib/prisma";
-import Link from "next/link";
+import {
+  DocumentStats,
+  DocumentsGrid,
+} from "@/app/components/documents-list";
+import { DocumentsListSkeleton, StatsSkeleton } from "@/app/components/skeletons";
+import { Suspense } from "react";
 
-export default async function DashboardPage() {
-  const user = await getOrCreateUser();
-
-  const documents = await prisma.document.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-  });
-
+export default function DashboardPage() {
   return (
-    <div className="max-w-4xl mx-auto p-8">
-      <h1 className="text-2xl font-bold mb-8">Your Documents</h1>
+    <div className="space-y-8 sm:space-y-10">
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
+          Your documents
+        </h1>
+        <p className="mt-2 text-muted-foreground text-sm sm:text-base max-w-xl">
+          Upload PDFs and chat with them using AI-powered semantic search.
+        </p>
+        <Suspense fallback={<StatsSkeleton />}>
+          <DocumentStats />
+        </Suspense>
+      </div>
 
       <DocumentUpload />
 
-      <div className="mt-8 space-y-3">
-        {documents.map((doc) => (
-          <Link
-            key={doc.id}
-            href={`/documents/${doc.id}/chat`}
-            className="flex items-center justify-between p-4 border rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-900"
-          >
-            <span className="font-medium">{doc.filename}</span>
-            <span className={`text-sm px-2 py-1 rounded-full ${
-              doc.status === "READY"
-                ? "bg-green-100 text-green-700"
-                : doc.status === "FAILED"
-                ? "bg-red-100 text-red-700"
-                : "bg-yellow-100 text-yellow-700"
-            }`}>
-              {doc.status}
-            </span>
-          </Link>
-        ))}
-      </div>
+      <Suspense fallback={<DocumentsListSkeleton />}>
+        <DocumentsGrid />
+      </Suspense>
     </div>
   );
 }

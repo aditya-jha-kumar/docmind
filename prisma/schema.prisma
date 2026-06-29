@@ -42,6 +42,7 @@ model Document {
   chunks DocumentChunk[]
   chats  Chat[]
 
+  @@index([userId, createdAt(sort: Desc)])
   @@map("documents")
 }
 
@@ -63,6 +64,8 @@ model DocumentChunk {
 
   document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
+  @@index([documentId])
+  @@index([pineconeId])
   @@map("document_chunks")
 }
 
@@ -78,6 +81,7 @@ model Chat {
   document  Document  @relation(fields: [documentId], references: [id])
   messages  Message[]
 
+  @@index([userId, documentId])
   @@map("chats")
 }
 
@@ -92,6 +96,7 @@ model Message {
 
   chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
 
+  @@index([chatId, createdAt])
   @@map("messages")
 }
 

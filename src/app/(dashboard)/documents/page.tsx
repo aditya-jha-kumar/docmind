@@ -1,3 +1,5 @@
+import { redirect } from "next/navigation";
+
 export default function DocumentsPage() {
-  return null;
+  redirect("/dashboard");
 }
